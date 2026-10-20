@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Explorador Estadístico | El Profe Augusto · CTP Santa Cruz</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800;900&display=swap');
+:root{--navy:#153653;--teal:#0f766e;--gold:#f5c842}
+*{box-sizing:border-box} body{font-family:'Nunito Sans',sans-serif;background:#f3f7fa;color:#172b3b}
+.hero{background:linear-gradient(115deg,rgba(10,38,57,.88),rgba(15,118,110,.66)),url('https://upload.wikimedia.org/wikipedia/commons/4/4e/Playa_Conchal%2C_Guanacaste%2C_Costa_Rica.jpg') center/cover;border-bottom:8px solid var(--gold)}
+.card{background:white;border-radius:1.25rem;box-shadow:0 10px 30px rgba(21,54,83,.08);border:1px solid #e4edf2}
+.chalk{background:#142d2a;color:#f3f8f4;border:8px solid #31564d;border-radius:12px;min-height:270px;padding:22px;box-shadow:inset 0 0 14px #071714}
+.chalk h1,.chalk h2,.chalk h3{color:#f7d76a}.chalk p{margin:.65rem 0;line-height:1.65}.chalk ol,.chalk ul{padding-left:1.5rem;margin:.5rem 0}.chalk li{margin:.35rem 0}
+.btn{transition:transform .15s,filter .15s}.btn:hover{filter:brightness(.96);transform:translateY(-1px)}
+.metric{min-height:100px}.metric .label{font-size:.78rem;color:#52687a;font-weight:800}.metric .value{font-size:1.35rem;font-weight:900;overflow-wrap:anywhere}
+:focus-visible{outline:3px solid #f5c842;outline-offset:2px}
+@media(max-width:640px){.hero h1{font-size:2rem}.chalk{padding:16px;border-width:5px}}
+</style>
+</head>
+<body class="pb-12">
+<header class="hero text-white px-4 py-10 md:py-14">
+ <div class="max-w-7xl mx-auto text-center">
+  <div class="inline-flex items-center gap-2 bg-yellow-300 text-slate-900 rounded-full px-4 py-1 text-sm font-black mb-4">CTP DE SANTA CRUZ · GUANACASTE</div>
+  <h1 class="text-4xl md:text-6xl font-black tracking-tight">📊 Explorador Estadístico</h1>
+  <p class="text-lg md:text-2xl font-extrabold text-yellow-200 mt-3">Calcula · Visualiza · Comprende</p>
+  <p class="mt-4 max-w-3xl mx-auto text-white/95">Una herramienta para aprender estadística con datos, gráficos y el acompañamiento del tutor IA <strong>El Profe Augusto</strong>.</p>
+  <div class="bg-white/95 text-slate-800 rounded-2xl p-4 mt-7 max-w-4xl mx-auto shadow-xl">
+   <p class="font-extrabold text-sm md:text-base">Colaboradores de la sección 10-2</p>
+   <p class="text-sm mt-1"><span class="text-emerald-800 font-bold">Gutiérrez Flores Haminton Alejandro</span> · <span class="font-bold">Pérez Valle Kenny Ismael</span> · <span class="text-rose-700 font-bold">Sequeira Gutiérrez Marco Andrés</span></p>
+  </div>
+ </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 mt-8 grid grid-cols-1 xl:grid-cols-2 gap-7">
+ <div class="space-y-7">
+  <section class="card p-5 md:p-7 border-t-4 border-sky-500">
+   <div class="flex items-center gap-3 mb-2"><span class="text-3xl">🧮</span><div><h2 class="text-2xl font-black text-sky-900">Calculadora estadística</h2><p class="text-sm text-slate-500">Escribe números separados por comas, espacios o saltos de línea.</p></div></div>
+   <label for="dataInput" class="block text-sm font-bold mb-2">Tus datos numéricos</label>
+   <textarea id="dataInput" rows="3" class="w-full rounded-xl border-2 border-slate-200 p-4 focus:border-sky-500" placeholder="Ej.: 12, 15, 14, 18, 12, 20"></textarea>
+   <div class="flex flex-col sm:flex-row gap-3 mt-3">
+    <button id="calculateBtn" class="btn flex-1 bg-sky-700 hover:bg-sky-800 text-white font-extrabold rounded-xl py-3 px-4">Calcular y graficar ✨</button>
+    <button id="sampleBtn" class="btn bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl py-3 px-4">Probar ejemplo</button>
+   </div>
+   <p id="statsError" class="hidden mt-3 p-3 rounded-lg bg-red-50 text-red-700 text-sm font-bold" role="alert"></p>
+  </section>
+
+  <section id="results" class="hidden space-y-6">
+   <div class="card p-5 md:p-7 border-t-4 border-emerald-500">
+    <h2 class="text-2xl font-black text-emerald-900 mb-4">📈 Resumen de medidas</h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+     <div class="metric rounded-xl bg-slate-50 border p-3"><div class="label">Mínimo</div><div id="v-min" class="value">—</div></div>
+     <div class="metric rounded-xl bg-slate-50 border p-3"><div class="label">Máximo</div><div id="v-max" class="value">—</div></div>
+     <div class="metric rounded-xl bg-sky-50 border border-sky-100 p-3"><div class="label">Media (x̄)</div><div id="v-mean" class="value text-sky-800">—</div></div>
+     <div class="metric rounded-xl bg-violet-50 border border-violet-100 p-3"><div class="label">Mediana (Q2)</div><div id="v-median" class="value text-violet-800">—</div></div>
+     <div class="metric rounded-xl bg-amber-50 border border-amber-100 p-3"><div class="label">Moda (Mo)</div><div id="v-mode" class="value text-amber-900">—</div></div>
+     <div class="metric rounded-xl bg-emerald-50 border border-emerald-100 p-3"><div class="label">Q1 · Primer cuartil</div><div id="v-q1" class="value text-emerald-800">—</div></div>
+     <div class="metric rounded-xl bg-orange-50 border border-orange-100 p-3"><div class="label">Q3 · Tercer cuartil</div><div id="v-q3" class="value text-orange-800">—</div></div>
+     <div class="metric rounded-xl bg-slate-50 border p-3"><div class="label">Cantidad de datos</div><div id="v-n" class="value">—</div></div>
+     <div class="metric rounded-xl bg-slate-50 border p-3"><div class="label">Rango</div><div id="v-range" class="value">—</div></div>
+    </div>
+    <p class="text-xs text-slate-500 mt-4">Cuartiles calculados como las medianas de las mitades inferior y superior; si la cantidad de datos es impar, se excluye la mediana de ambas mitades.</p>
+   </div>
+   <div class="card p-5 md:p-7 border-t-4 border-orange-400">
+    <h2 class="text-2xl font-black text-orange-900 mb-2">🎨 Visualización gráfica</h2>
+    <p class="text-sm text-slate-600 mb-4">Explora cómo se distribuyen los valores y dónde se ubican los cuartiles.</p>
+    <div class="bg-slate-50 border rounded-2xl p-3 mb-5"><h3 class="font-extrabold text-center mb-1">Diagrama de cajas y bigotes</h3><div id="boxplot" style="height:290px" aria-label="Diagrama de cajas y bigotes"></div></div>
+    <div class="bg-slate-50 border rounded-2xl p-3"><h3 class="font-extrabold text-center mb-1">Histograma y campana normal de referencia</h3><div id="gauss" style="height:330px" aria-label="Histograma con curva normal de referencia"></div><p class="text-xs text-slate-500 px-2 pb-2">La curva amarilla es un modelo normal construido con la media y la desviación estándar de los datos; no demuestra por sí sola que los datos sigan una distribución normal.</p></div>
+   </div>
+  </section>
+ </div>
+
+ <div class="space-y-7">
+  <section class="card p-5 md:p-7 border-t-8 border-indigo-600">
+   <div class="flex items-center gap-3 mb-3"><span class="text-4xl">👨‍🏫</span><div><h2 class="text-2xl md:text-3xl font-black text-indigo-900">El Profe Augusto</h2><p class="text-indigo-600 font-bold">Tu tutor de matemáticas con IA</p></div></div>
+   <p class="text-slate-600 mb-5">Escribe una pregunta o sube una fotografía clara del ejercicio. El tutor intentará explicarlo paso a paso. Si detecta una lista de datos, podrás revisar esos números y enviarlos a la calculadora.</p>
+   <label for="question" class="block text-sm font-extrabold mb-2">¿Qué necesitas resolver?</label>
+   <textarea id="question" rows="3" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-indigo-500" placeholder="Ej.: Explica cómo calcular la mediana de estos datos..."></textarea>
+   <div class="mt-4">
+    <label for="photo" class="block text-sm font-extrabold mb-2">📸 Foto del cuaderno, libro o ejercicio</label>
+    <input id="photo" type="file" accept="image/*" capture="environment" class="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-4 file:py-3 file:font-bold file:text-indigo-800 hover:file:bg-indigo-100">
+    <div id="previewWrap" class="hidden mt-3 rounded-xl border bg-slate-50 p-3"><img id="preview" alt="Vista previa del ejercicio" class="max-h-64 mx-auto rounded-lg"><button id="removePhoto" type="button" class="mt-3 text-sm font-bold text-red-700 underline">Quitar foto</button></div>
+   </div>
+   <div class="mt-5 rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+    <p class="font-extrabold text-indigo-950">🔒 Tutor IA conectado de forma segura</p>
+    <p class="text-sm text-indigo-900 mt-2">No necesitas escribir ni conocer ninguna clave API. La conexión se gestiona desde el servidor de la institución. Esta función estará disponible cuando el sitio se publique junto con su servidor configurado.</p>
+    <p class="text-xs text-indigo-800 mt-2">Por privacidad, evita subir fotografías con nombres, rostros, calificaciones u otros datos personales.</p>
+   </div>
+   <button id="solveBtn" class="btn mt-4 w-full bg-indigo-700 hover:bg-indigo-800 text-white font-black rounded-xl py-4 text-lg">✨ Explicar ejercicio paso a paso</button>
+   <div id="aiError" class="hidden mt-4 p-3 rounded-xl bg-red-50 text-red-800 text-sm font-bold" role="alert"></div>
+   <div id="loading" class="hidden mt-4 rounded-xl bg-indigo-50 p-4 text-center text-indigo-900 font-bold"><span class="inline-block animate-spin mr-2">◌</span>El Profe Augusto está revisando el ejercicio…</div>
+   <div class="relative mt-6">
+    <div class="absolute -top-3 right-5 bg-yellow-300 text-yellow-950 text-xs font-black px-3 py-1 rounded shadow">LA PIZARRA DEL PROFE</div>
+    <div class="chalk" aria-live="polite"><div id="answer"><p class="text-yellow-200 font-extrabold">¡Hola! 👋</p><p>Sube una foto o escribe tu ejercicio. Vamos a resolverlo con calma, entendiendo cada paso.</p></div></div>
+   </div>
+   <div id="extractedWrap" class="hidden mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+    <h3 class="font-black text-emerald-900">🔎 Datos detectados en el ejercicio</h3>
+    <p class="text-sm text-emerald-800 mt-1">Revisa y corrige los números antes de graficarlos.</p>
+    <input id="extractedData" class="mt-3 w-full rounded-lg border border-emerald-300 p-3" aria-label="Datos numéricos reconocidos">
+    <button id="useExtracted" class="btn mt-3 w-full bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg py-3 font-extrabold">Usar estos datos y mostrar gráficos 📊</button>
+   </div>
+  </section>
+  <section class="rounded-2xl bg-gradient-to-br from-slate-900 to-teal-900 text-white p-6 shadow-lg">
+   <h2 class="text-xl font-black mb-2">💡 Aprende comprobando</h2>
+   <ul class="list-disc pl-5 space-y-2 text-sm text-white/90">
+    <li>La IA puede equivocarse: verifica los cálculos.</li>
+    <li>La media se obtiene sumando los datos y dividiendo entre la cantidad de datos.</li>
+    <li>La mediana es el valor central cuando los datos están ordenados.</li>
+    <li>Los cuartiles ayudan a describir cómo se distribuyen los datos.</li>
+   </ul>
+  </section>
+ </div>
+</main>
+<footer class="max-w-7xl mx-auto px-4 mt-8 text-center text-xs text-slate-500">Recurso educativo propuesto para el CTP de Santa Cruz · Guanacaste, Costa Rica. La herramienta complementa y no sustituye la mediación docente.</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+let selectedImage = null;
+let latestData = [];
+
+function parseNumbers(raw){
+  const parts = raw.trim().split(/[\s,;]+/).filter(Boolean);
+  if (!parts.length) return [];
+  return parts.map(p => Number(p.replace(',', '.')));
+}
+function median(a){
+  if(!a.length) return NaN;
+  const m=Math.floor(a.length/2);
+  return a.length%2 ? a[m] : (a[m-1]+a[m])/2;
+}
+function fmt(n){ return Number.isInteger(n) ? String(n) : n.toLocaleString('es-CR',{maximumFractionDigits:4}); }
+function showStatsError(msg){$('statsError').textContent=msg;$('statsError').classList.remove('hidden');}
+function hideStatsError(){$('statsError').classList.add('hidden');}
+
+function processData(){
+  hideStatsError();
+  const raw=$('dataInput').value;
+  const values=parseNumbers(raw);
+  if(values.length<2 || values.some(v=>!Number.isFinite(v))){
+    showStatsError('Ingresa al menos dos números válidos. Puedes separarlos con comas, espacios o saltos de línea.');
+    return false;
+  }
+  if(values.length>5000){showStatsError('Para mantener una respuesta fluida, usa un máximo de 5000 datos por cálculo.');return false;}
+  const a=[...values].sort((x,y)=>x-y), n=a.length;
+  const mean=a.reduce((s,v)=>s+v,0)/n;
+  const med=median(a);
+  const lower=a.slice(0,Math.floor(n/2));
+  const upper=a.slice(Math.ceil(n/2));
+  const q1=median(lower), q3=median(upper);
+  const freq=new Map();
+  a.forEach(v=>freq.set(v,(freq.get(v)||0)+1));
+  const maxFreq=Math.max(...freq.values());
+  const modes=[...freq.entries()].filter(([v,c])=>c===maxFreq).map(([v])=>v);
+  const modeText=maxFreq===1?'Sin moda':(modes.length===a.length?'Todos aparecen una vez':modes.map(fmt).join(', '));
+  $('v-min').textContent=fmt(a[0]); $('v-max').textContent=fmt(a[n-1]);
+  $('v-mean').textContent=fmt(mean); $('v-median').textContent=fmt(med);
+  $('v-mode').textContent=modeText; $('v-q1').textContent=fmt(q1); $('v-q3').textContent=fmt(q3);
+  $('v-n').textContent=n; $('v-range').textContent=fmt(a[n-1]-a[0]);
+  $('results').classList.remove('hidden');
+  latestData=a;
+  drawBox(a); drawGauss(a,mean,med);
+  return true;
+}
+function drawBox(data){
+  if(!window.Plotly){showStatsError('No se pudo cargar Plotly. Revisa tu conexión a Internet.');return;}
+  Plotly.newPlot('boxplot',[{x:data,type:'box',name:'Conjunto de datos',boxpoints:'all',jitter:.28,pointpos:-1.35,marker:{color:'#0e7490',size:7},line:{color:'#155e75',width:2},fillcolor:'rgba(14,116,144,.22)'}],{
+    margin:{l:35,r:20,t:15,b:55},xaxis:{title:'Valores',zeroline:false},yaxis:{visible:false},showlegend:false,
+    paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',font:{family:'Nunito Sans'}
+  },{responsive:true,displayModeBar:false});
+}
+function drawGauss(data,mean,medianValue){
+  const n=data.length, min=Math.min(...data), max=Math.max(...data);
+  const variance=data.reduce((s,v)=>s+(v-mean)**2,0)/n;
+  const sd=Math.sqrt(variance);
+  const span=Math.max(max-min,sd*6,1);
+  const start=min-span*.12, end=max+span*.12;
+  const xs=[], ys=[];
+  for(let i=0;i<=160;i++){
+    const x=start+(end-start)*i/160; xs.push(x);
+    ys.push(sd===0?0:(1/(sd*Math.sqrt(2*Math.PI)))*Math.exp(-((x-mean)**2)/(2*sd*sd)));
+  }
+  const hist={x:data,type:'histogram',histnorm:'probability density',name:'Histograma',opacity:.65,marker:{color:'#8bb8c7',line:{color:'#fff',width:1}}};
+  const curve={x:xs,y:ys,type:'scatter',mode:'lines',name:'Curva normal de referencia',line:{color:'#eab308',width:4,shape:'spline'}};
+  Plotly.newPlot('gauss',[hist,curve],{
+    margin:{l:45,r:20,t:18,b:55},barmode:'overlay',xaxis:{title:'Valores'},yaxis:{title:'Densidad',rangemode:'tozero'},
+    paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',font:{family:'Nunito Sans'},
+    shapes:[
+      {type:'line',x0:mean,x1:mean,y0:0,y1:1,yref:'paper',line:{color:'#dc2626',width:2,dash:'dash'}},
+      {type:'line',x0:medianValue,x1:medianValue,y0:0,y1:1,yref:'paper',line:{color:'#16a34a',width:2,dash:'dot'}}
+    ],
+    annotations:[
+      {x:mean,y:1,yref:'paper',text:'Media',showarrow:false,yanchor:'bottom',font:{color:'#dc2626',size:12}},
+      {x:medianValue,y:.88,yref:'paper',text:'Mediana',showarrow:false,yanchor:'bottom',font:{color:'#15803d',size:12}}
+    ]
+  },{responsive:true,displayModeBar:false});
+}
+$('calculateBtn').addEventListener('click',processData);
+$('sampleBtn').addEventListener('click',()=>{$('dataInput').value='12, 15, 14, 18, 12, 20, 16, 15, 14, 19, 12';processData();});
+$('photo').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0]; if(!f)return;
+  $('aiError').classList.add('hidden');
+  if(!f.type.startsWith('image/')){$('aiError').textContent='Selecciona un archivo de imagen.';$('aiError').classList.remove('hidden');return;}
+  if(f.size>12*1024*1024){$('aiError').textContent='La imagen supera los 12 MB. Elige una foto más pequeña.';$('aiError').classList.remove('hidden');e.target.value='';return;}
+  const reader=new FileReader();
+  reader.onload=()=>{selectedImage={mimeType:f.type,data:String(reader.result).split(',')[1]};$('preview').src=reader.result;$('previewWrap').classList.remove('hidden');};
+  reader.readAsDataURL(f);
+});
+$('removePhoto').addEventListener('click',()=>{selectedImage=null;$('photo').value='';$('preview').removeAttribute('src');$('previewWrap').classList.add('hidden');});
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function renderAnswer(text){
+  // Safe, simple rendering: escape HTML first, then format plain text as readable paragraphs/lists.
+  const safe=escapeHtml(text);
+  const chunks=safe.split(/\n+/).map(line=>{
+    const t=line.trim(); if(!t)return '';
+    if(/^(\d+[\.\)]|[-•])\s/.test(t))return '<p class="ml-2">✦ '+t+'</p>';
+    if(t.length<90 && /^(Paso|Respuesta|Solución|Comprobación|Datos detectados)/i.test(t))return '<h3>'+t+'</h3>';
+    return '<p>'+t+'</p>';
+  });
+  $('answer').innerHTML=chunks.join('');
+}
+function extractNumbers(text){
+  const match=text.match(/DATOS_EXTRAIDOS\s*:\s*([^\n]+)/i);
+  if(!match)return null;
+  const cleaned=match[1].replace(/[^\d.,;\s-]/g,' ').trim();
+  const vals=cleaned.split(/[\s,;]+/).filter(Boolean).map(v=>Number(v.replace(',','.')));
+  return vals.length>=2 && vals.every(Number.isFinite) ? vals : null;
+}
+$('solveBtn').addEventListener('click',async()=>{
+  const question=$('question').value.trim();
+  const err=$('aiError'); err.classList.add('hidden');
+  if(!question&&!selectedImage){err.textContent='Escribe tu pregunta o sube una foto del ejercicio.';err.classList.remove('hidden');return;}
+  $('loading').classList.remove('hidden');$('solveBtn').disabled=true;
+  try{
+    const prompt=`Eres “El Profe Augusto”, un tutor amable de matemáticas de secundaria en Costa Rica. Explica en español claro y paso a paso; no des solo el resultado. Organiza la respuesta con pasos numerados y comprueba el resultado cuando sea posible. No inventes datos que no puedas leer: indica si algo es ilegible. Si el ejercicio contiene una lista explícita de datos numéricos que deban analizarse estadísticamente, al final agrega una línea DATOS_EXTRAIDOS: número, número, número. Extrae únicamente los valores que pertenezcan claramente a esa lista, no números de páginas, fechas, números de ejercicio o pasos. Si no hay una lista de datos, no agregues esa línea. Evita HTML y LaTeX complejo.
+
+Consulta del estudiante: ${question||'Analiza la foto y resuelve el ejercicio paso a paso.'}`;
+    const body={question:prompt};
+    if(selectedImage) body.image={mimeType:selectedImage.mimeType,data:selectedImage.data};
+    const response=await fetch('/api/solve',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)
+    });
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(payload.error||`Error de conexión (${response.status}).`);
+    const answer=(payload.answer||'').trim();
+    if(!answer)throw new Error('La IA no devolvió una explicación. Intenta con otra foto o reformula la pregunta.');
+    const values=extractNumbers(answer);
+    const clean=answer.replace(/\n?DATOS_EXTRAIDOS\s*:[^\n]*/i,'').trim();
+    renderAnswer(clean);
+    if(values){$('extractedData').value=values.join(', ');$('extractedWrap').classList.remove('hidden');}
+    else $('extractedWrap').classList.add('hidden');
+  }catch(e){
+    err.textContent='No se pudo completar la consulta: '+e.message+' Si el problema continúa, avisa a la persona encargada del sitio.';
+    err.classList.remove('hidden');
+  }finally{$('loading').classList.add('hidden');$('solveBtn').disabled=false;}
+});
+$('useExtracted').addEventListener('click',()=>{
+  $('dataInput').value=$('extractedData').value;
+  if(processData())$('results').scrollIntoView({behavior:'smooth',block:'start'});
+});
+</script>
+</body>
+</html>
